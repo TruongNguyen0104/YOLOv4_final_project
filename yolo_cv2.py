@@ -20,7 +20,6 @@ FONT = cv2.FONT_HERSHEY_SIMPLEX
 FONT_SCALE = 1
 THICKNESS = 1
 
-
 ################################################
 # FUNCTION
 
