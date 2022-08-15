@@ -14,8 +14,8 @@ import os
 
 
 CLASS_NAME_FILE = "coco.names"
-WEIGHT_FILE = "yolov4.weights"
-CLF_FILE = "yolov4.cfg"
+WEIGHT_FILE = "yolov4-tiny.weights"
+CLF_FILE = "yolov4-tiny.cfg"
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 FONT_SCALE = 1
 THICKNESS = 1
