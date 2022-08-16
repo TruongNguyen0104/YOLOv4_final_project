@@ -9,7 +9,7 @@ import moviepy.editor as moviepy
 import time
 from aiortc.contrib.media import MediaPlayer, MediaRecorder, MediaRelay
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, WebRtcMode
-import keyboard
+from pynput import keyboard
 import av
 import os
 
@@ -160,6 +160,11 @@ class Video(VideoProcessorBase):
 
             return av.VideoFrame.from_ndarray(image, format="bgr24")
 
+# def on_press(key):
+#     if key.char == 'esc': # here you can choose the letter you want to get detected
+#         return True
+#     return False
+
 ########################################################################
 
 st.title("YOLOv4 PRE-TRAINED MODEL APPLICATION")
@@ -270,37 +275,42 @@ if uploaded_file is not None:
         begin = time.perf_counter()
         while True:
 
+            with keyboard.Listener(on_press=on_press) as listener:
+                listener.join()
             p.write("Rendering...")
 
             _, image = cap.read()
             
 
             if  _!= False:
-                image = cv2.cvtColor(image , cv2.COLOR_BGR2RGB)
-                height, width, channels = get_image_shape(image)
+                try:
+                    image = cv2.cvtColor(image , cv2.COLOR_BGR2RGB)
+                    height, width, channels = get_image_shape(image)
 
-                start = time.perf_counter()
-                outs = detect_objects(image)
-                time_took = time.perf_counter() - start
-                count +=1
-                p.write(f"Time took: {count} {time_took}")
-                
-                class_ids.clear()
-                boxes.clear()
-                confidences.clear()
-                class_ids, boxes, confidences = detection_inferrence(outs,0.5)
+                    start = time.perf_counter()
+                    outs = detect_objects(image)
+                    time_took = time.perf_counter() - start
+                    count +=1
+                    p.write(f"Time took: {count} {time_took}")
+                    
+                    class_ids.clear()
+                    boxes.clear()
+                    confidences.clear()
+                    class_ids, boxes, confidences = detection_inferrence(outs,0.5)
 
-                indexes = non_maximum_suppresion(boxes, confidences)
+                    indexes = non_maximum_suppresion(boxes, confidences)
 
-                image = display(boxes,indexes,image)
+                    image = display(boxes,indexes,image)
 
-                image = cv2.cvtColor(image , cv2.COLOR_RGBA2BGR)
-                out.write(image)
+                    image = cv2.cvtColor(image , cv2.COLOR_RGBA2BGR)
+                    out.write(image)
+                except KeyboardInterrupt:
+                    break
 
                 # if ord("q") == cv2.waitKey(1):
                 #     break
-                if keyboard.is_pressed('Esc'):
-                    break
+                # if on_press():
+                #     break
             else:
                 break
         
