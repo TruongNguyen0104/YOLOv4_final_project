@@ -9,7 +9,7 @@ import moviepy.editor as moviepy
 import time
 from aiortc.contrib.media import MediaPlayer, MediaRecorder, MediaRelay
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, WebRtcMode
-from pynput import keyboard
+# from pynput import keyboard
 import av
 import os
 
