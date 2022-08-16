@@ -268,7 +268,6 @@ if uploaded_file is not None:
         p2 = st.empty()
         begin = time.perf_counter()
         while True:
-            key = cv2.waitKey(0)
 
             p.write("Rendering...")
 
