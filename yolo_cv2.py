@@ -9,7 +9,6 @@ import moviepy.editor as moviepy
 import time
 from aiortc.contrib.media import MediaPlayer, MediaRecorder, MediaRelay
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, WebRtcMode
-# from pynput import keyboard
 import av
 import os
 
@@ -28,10 +27,6 @@ THICKNESS = 1
 def load_model(weights=WEIGHT_FILE,clf=CLF_FILE):
     print("load YOLO")
     net = cv2.dnn.readNet(weights,clf)
-
-    # net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
-    # net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
-
 
     model = cv2.dnn_DetectionModel(net)
     model.setInputParams(size=(416, 416), scale=1/255, swapRB=True)
@@ -160,14 +155,9 @@ class Video(VideoProcessorBase):
 
             return av.VideoFrame.from_ndarray(image, format="bgr24")
 
-# def on_press(key):
-#     if key.char == 'esc': # here you can choose the letter you want to get detected
-#         return True
-#     return False
-
 ########################################################################
 
-st.title("YOLOv4 PRE-TRAINED MODEL APPLICATION")
+st.title("YOLOv4 MODEL APPLICATION")
 
 bl3,header,bl4 = st.columns(3)
 header.header("Final project")
@@ -274,11 +264,6 @@ if uploaded_file is not None:
         p2 = st.empty()
         begin = time.perf_counter()
         while True:
-
-            # with keyboard.Listener(on_press=on_press) as listener:
-            #     listener.join()
-            # p.write("Rendering...")
-
             _, image = cap.read()
             
 
@@ -306,11 +291,6 @@ if uploaded_file is not None:
                     out.write(image)
                 except KeyboardInterrupt:
                     break
-
-                # if ord("q") == cv2.waitKey(1):
-                #     break
-                # if on_press():
-                #     break
             else:
                 break
         
