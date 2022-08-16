@@ -275,9 +275,9 @@ if uploaded_file is not None:
         begin = time.perf_counter()
         while True:
 
-            with keyboard.Listener(on_press=on_press) as listener:
-                listener.join()
-            p.write("Rendering...")
+            # with keyboard.Listener(on_press=on_press) as listener:
+            #     listener.join()
+            # p.write("Rendering...")
 
             _, image = cap.read()
             
