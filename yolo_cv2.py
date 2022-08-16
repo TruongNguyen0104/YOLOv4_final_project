@@ -13,9 +13,9 @@ import av
 import os
 
 
-CLASS_NAME_FILE = "coco.names"
-WEIGHT_FILE = "yolov4-tiny.weights"
-CLF_FILE = "yolov4-tiny.cfg"
+CLASS_NAME_FILE = "model/coco.names"
+WEIGHT_FILE = "model/yolov4-tiny.weights"
+CLF_FILE = "model/yolov4-tiny.cfg"
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 FONT_SCALE = 1
 THICKNESS = 1
