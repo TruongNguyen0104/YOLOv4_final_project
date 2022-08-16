@@ -9,6 +9,7 @@ import moviepy.editor as moviepy
 import time
 from aiortc.contrib.media import MediaPlayer, MediaRecorder, MediaRelay
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, WebRtcMode
+import keyboard
 import av
 import os
 
@@ -296,7 +297,9 @@ if uploaded_file is not None:
                 image = cv2.cvtColor(image , cv2.COLOR_RGBA2BGR)
                 out.write(image)
 
-                if ord("q") == cv2.waitKey(1):
+                # if ord("q") == cv2.waitKey(1):
+                #     break
+                if keyboard.is_pressed('Esc'):
                     break
             else:
                 break
