@@ -191,27 +191,6 @@ def imageInput():
         #img_ = Image.open(im_base64)
         with col2:
             st.image(im_base64, caption='Model Prediction(s)', use_column_width='always')
-    
-
-def videoInput():
-    uploaded_video = st.file_uploader("Upload Video", type=['mp4', 'mpeg', 'mov'])
-    if uploaded_video != None:
-
-        vid = uploaded_file.name
-        with open(vid, mode='wb') as f:
-            f.write(uploaded_file.read()) # save video to disk
-            
-        st_video = open(vid,'rb')
-        video_bytes = st_video.read()
-        st.video(video_bytes)
-        st.write("Uploaded Video")
-
-        
-        detect(weights='model/best.pt', source=vid, device='cpu')
-        # st_video2 = open(outputpath, 'rb')
-        # video_bytes2 = st_video2.read()
-        # st.video(video_bytes2)
-        # st.write("Model Prediction")
 
 ########################################################################
 
