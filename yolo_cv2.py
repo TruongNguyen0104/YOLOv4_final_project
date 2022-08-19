@@ -12,6 +12,15 @@ from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, WebRtcMode
 import av
 import os
 
+import base64
+import torch
+from PIL import Image
+from io import *
+import glob
+from datetime import datetime
+import os
+import time
+
 
 CLASS_NAME_FILE = "model/coco.names"
 WEIGHT_FILE = "model/yolov4-tiny.weights"
@@ -155,6 +164,56 @@ class Video(VideoProcessorBase):
 
             return av.VideoFrame.from_ndarray(image, format="bgr24")
 
+def imageInput():
+    
+    image_file = st.file_uploader("Upload An Image", type=['png', 'jpeg', 'jpg'])
+    col1, col2 = st.columns(2)
+    if image_file is not None:
+        img = Image.open(image_file)
+        with col1:
+            st.image(img, caption='Uploaded Image', use_column_width='always')
+        # ts = datetime.timestamp(datetime.now())
+        # imgpath = os.path.join('data/uploads', str(ts)+image_file.name)
+        # outputpath = os.path.join('data/outputs', os.path.basename(imgpath))
+        # with open(imgpath, mode="wb") as f:
+        #     f.write(image_file.getbuffer())
+
+        #call Model prediction--
+        model = torch.hub.load('ultralytics/yolov5', 'custom', path='model/best.pt', force_reload=True) 
+        pred = model(img)
+        pred.render()  # render bbox in image
+        
+        for im in pred.ims:
+            im_base64 = Image.fromarray(im)
+        #im_base64.save(outputpath)
+
+        #--Display predicton
+            
+        #img_ = Image.open(im_base64)
+        with col2:
+            st.image(im_base64, caption='Model Prediction(s)', use_column_width='always')
+    
+
+def videoInput():
+    uploaded_video = st.file_uploader("Upload Video", type=['mp4', 'mpeg', 'mov'])
+    if uploaded_video != None:
+
+        vid = uploaded_file.name
+        with open(vid, mode='wb') as f:
+            f.write(uploaded_file.read()) # save video to disk
+            
+        st_video = open(vid,'rb')
+        video_bytes = st_video.read()
+        st.video(video_bytes)
+        st.write("Uploaded Video")
+
+        
+        detect(weights='model/best.pt', source=vid, device='cpu')
+        # st_video2 = open(outputpath, 'rb')
+        # video_bytes2 = st_video2.read()
+        # st.video(video_bytes2)
+        # st.write("Model Prediction")
+
 ########################################################################
 
 st.title("YOLOv4 MODEL APPLICATION")
@@ -183,154 +242,231 @@ class_ids = []
 confidences = []
 boxes = []
 
-rad = st.sidebar.radio("Detection options",["Image","Video","Camera"])
+ver = st.sidebar.radio("YOLO version",["YOLOv4","YOLOv5"])
+if ver == "YOLOv4":
+    rad = st.sidebar.radio("Detection options",["Image","Video","Camera"])
 
-# Load darknet files YOLO, model
-net, model = load_model(WEIGHT_FILE,CLF_FILE)
-
-
-classes = get_classes(CLASS_NAME_FILE)
-output_layers = get_output_layer(net)
+    # Load darknet files YOLO, model
+    net, model = load_model(WEIGHT_FILE,CLF_FILE)
 
 
-# generate color list
-colors = np.random.randint(0, 255, size=(len(classes), 3), dtype="uint8")
-
-uploader = st.empty()
-uploaded_file = uploader.file_uploader("Choose a file")
+    classes = get_classes(CLASS_NAME_FILE)
+    output_layers = get_output_layer(net)
 
 
+    # generate color list
+    colors = np.random.randint(0, 255, size=(len(classes), 3), dtype="uint8")
 
-if uploaded_file is not None:
-    
-    # Image detection
-    if rad =="Image":
-        st.subheader("Image option")
+    uploader = st.empty()
+    uploaded_file = uploader.file_uploader("Choose a file")
 
-        # Convert the file to an opencv image.
-        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-        img = cv2.imdecode(file_bytes, 1)
-        img = cv2.cvtColor(img , cv2.COLOR_BGR2RGB)
+
+
+    if uploaded_file is not None:
         
-        st.write("Original picture")
-        st.image(img,width=700)
+        # Image detection
+        if rad =="Image":
+            st.subheader("Image option")
 
-        height, width, channels = get_image_shape(img)
-
-        # Detecting objects
-        outs = detect_objects(img)
-        
-        st.subheader("Setting the threshold for our detection")
-        threshold = st.slider("Threshold", min_value=0.00, max_value=1.0, step=0.05, value=0.5)
-
-        if st.button("Detect"):
-            class_ids, boxes, confidences = detection_inferrence(outs,threshold)
-
-            # remove noise
-            indexes = non_maximum_suppresion(boxes, confidences)
-                    
-            st.write(f"Object detection with confidence: {threshold:.2f}")
-            img = display(boxes,indexes,img)
+            # Convert the file to an opencv image.
+            file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+            img = cv2.imdecode(file_bytes, 1)
+            img = cv2.cvtColor(img , cv2.COLOR_BGR2RGB)
             
-            ## display result
+            st.write("Original picture")
             st.image(img,width=700)
-            result = Image.fromarray(img)
+
+            height, width, channels = get_image_shape(img)
+
+            # Detecting objects
+            outs = detect_objects(img)
             
-            st.markdown(get_image_download_link(result,"result.jpg",'Download '+"result.jpg"), unsafe_allow_html=True)
-    
-    #Video detection
-    elif rad =="Video":
-        st.subheader("VIDEO option")
+            st.subheader("Setting the threshold for our detection")
+            threshold = st.slider("Threshold", min_value=0.00, max_value=1.0, step=0.05, value=0.5)
 
-        vid = uploaded_file.name
-        with open(vid, mode='wb') as f:
-            f.write(uploaded_file.read()) # save video to disk
+            if st.button("Detect"):
+                class_ids, boxes, confidences = detection_inferrence(outs,threshold)
+
+                # remove noise
+                indexes = non_maximum_suppresion(boxes, confidences)
+                        
+                st.write(f"Object detection with confidence: {threshold:.2f}")
+                img = display(boxes,indexes,img)
+                
+                ## display result
+                st.image(img,width=700)
+                result = Image.fromarray(img)
+                
+                st.markdown(get_image_download_link(result,"result.jpg",'Download '+"result.jpg"), unsafe_allow_html=True)
         
-        st_video = open(vid,'rb')
-        video_bytes = st_video.read()
-        st.video(video_bytes)
-        st.write("Uploaded Video")
+        #Video detection
+        elif rad =="Video":
+            st.subheader("VIDEO option")
 
-        cap = cv2.VideoCapture(vid)
-        _, image = cap.read()
-        image = cv2.cvtColor(image , cv2.COLOR_BGR2RGB)
-        height, width, channels = get_image_shape(image)
-
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter("detected_video.mp4", fourcc, 20.0, (width, height))
-        count = 0
-
-        p = st.empty()
-        p2 = st.empty()
-        begin = time.perf_counter()
-        while True:
-            _, image = cap.read()
+            vid = uploaded_file.name
+            with open(vid, mode='wb') as f:
+                f.write(uploaded_file.read()) # save video to disk
             
-
-            if  _!= False:
-                try:
-                    image = cv2.cvtColor(image , cv2.COLOR_BGR2RGB)
-                    height, width, channels = get_image_shape(image)
-
-                    start = time.perf_counter()
-                    outs = detect_objects(image)
-                    time_took = time.perf_counter() - start
-                    count +=1
-                    p.write(f"Time took: {count} {time_took}")
-                    
-                    class_ids.clear()
-                    boxes.clear()
-                    confidences.clear()
-                    class_ids, boxes, confidences = detection_inferrence(outs,0.5)
-
-                    indexes = non_maximum_suppresion(boxes, confidences)
-
-                    image = display(boxes,indexes,image)
-
-                    image = cv2.cvtColor(image , cv2.COLOR_RGBA2BGR)
-                    out.write(image)
-                except KeyboardInterrupt:
-                    break
-            else:
-                break
-        
-        p.write(f"Rendering time: {(time.perf_counter() - begin):.2f}")
-
-
-        cap.release()
-        out.release()
-
-        try:
-            clip = moviepy.VideoFileClip('detected_video.mp4')
-            clip.write_videofile("myvideo.mp4")
-            st_video = open('myvideo.mp4','rb')
+            st_video = open(vid,'rb')
             video_bytes = st_video.read()
             st.video(video_bytes)
-            st.write("Detected Video") 
-        except OSError:
-            ''
-       
-# Camera detection
-elif rad =="Camera":
-    uploader.empty()
-    st.subheader("Camera option")
+            st.write("Uploaded Video")
 
-    webrtc_ctx = webrtc_streamer(
-        key="object-detection",
-        mode=WebRtcMode.SENDRECV,
-        
-        rtc_configuration={"iceServers": [
-        {"urls": ["stun:stun.l.google.com:19302"]}]},
-        
-        media_stream_constraints={
-        "video": True,
-        "audio": False,},
-        
-        video_processor_factory=Video,
-        async_processing=True,
-    )
+            cap = cv2.VideoCapture(vid)
+            _, image = cap.read()
+            image = cv2.cvtColor(image , cv2.COLOR_BGR2RGB)
+            height, width, channels = get_image_shape(image)
 
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter("detected_video.mp4", fourcc, 20.0, (width, height))
+            count = 0
+
+            p = st.empty()
+            p2 = st.empty()
+            begin = time.perf_counter()
+            while True:
+                _, image = cap.read()
+                
+
+                if  _!= False:
+                    try:
+                        image = cv2.cvtColor(image , cv2.COLOR_BGR2RGB)
+                        height, width, channels = get_image_shape(image)
+
+                        start = time.perf_counter()
+                        outs = detect_objects(image)
+                        time_took = time.perf_counter() - start
+                        count +=1
+                        p.write(f"Time took: {count} {time_took}")
+                        
+                        class_ids.clear()
+                        boxes.clear()
+                        confidences.clear()
+                        class_ids, boxes, confidences = detection_inferrence(outs,0.5)
+
+                        indexes = non_maximum_suppresion(boxes, confidences)
+
+                        image = display(boxes,indexes,image)
+
+                        image = cv2.cvtColor(image , cv2.COLOR_RGBA2BGR)
+                        out.write(image)
+                    except KeyboardInterrupt:
+                        break
+                else:
+                    break
+            
+            p.write(f"Rendering time: {(time.perf_counter() - begin):.2f}")
+
+
+            cap.release()
+            out.release()
+
+            try:
+                clip = moviepy.VideoFileClip('detected_video.mp4')
+                clip.write_videofile("myvideo.mp4")
+                st_video = open('myvideo.mp4','rb')
+                video_bytes = st_video.read()
+                st.video(video_bytes)
+                st.write("Detected Video") 
+            except OSError:
+                ''
+        
+    # Camera detection
+    elif rad =="Camera":
+        uploader.empty()
+        st.subheader("Camera option")
+
+        webrtc_ctx = webrtc_streamer(
+            key="object-detection",
+            mode=WebRtcMode.SENDRECV,
+            
+            rtc_configuration={"iceServers": [
+            {"urls": ["stun:stun.l.google.com:19302"]}]},
+            
+            media_stream_constraints={
+            "video": True,
+            "audio": False,},
+            
+            video_processor_factory=Video,
+            async_processing=True,
+        )
+
+    else:
+        st.write("No file was choosen!")
 else:
-    st.write("No file was choosen!")
+    rad = st.sidebar.radio("Detection options",["Image","Video"])
+    if rad == "Image":    
+        imageInput()
+    elif rad == "Video": 
+        st.subheader("VIDEO option")
+        
+        uploader = st.empty()
+        uploaded_file = uploader.file_uploader("Choose a file")
+
+        if uploaded_file is not None:
+            model = torch.hub.load('ultralytics/yolov5', 'custom', path='model/best.pt', force_reload=True) 
+            vid = uploaded_file.name
+            with open(vid, mode='wb') as f:
+                f.write(uploaded_file.read()) # save video to disk
+                
+            st_video = open(vid,'rb')
+            video_bytes = st_video.read()
+            st.video(video_bytes)
+            st.write("Uploaded Video")
+
+            cap = cv2.VideoCapture(vid)
+            _, image = cap.read()
+            image = cv2.cvtColor(image , cv2.COLOR_BGR2RGB)
+            height, width, channels = get_image_shape(image)
+
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter("detected_video.mp4", fourcc, 20.0, (width, height))
+            count = 0
+
+            p = st.empty()
+            p2 = st.empty()
+            begin = time.perf_counter()
+            while True:
+                _, image = cap.read()
+                    
+
+                if  _!= False:
+                    try:
+                        image = cv2.cvtColor(image , cv2.COLOR_BGR2RGB)
+                        height, width, channels = get_image_shape(image)
+
+                        start = time.perf_counter()
+
+                        pred = model(image)
+                        pred.render()  # render bbox in image
+
+                        time_took = time.perf_counter() - start
+                        count +=1
+                        p.write(f"Time took: {count} {time_took}")
+
+                        image = cv2.cvtColor(np.array(pred.ims)[0] , cv2.COLOR_RGBA2BGR)
+                        out.write(image)
+                    except KeyboardInterrupt:
+                        break
+                else:
+                    break
+                
+            p.write(f"Rendering time: {(time.perf_counter() - begin):.2f}")
+
+
+            cap.release()
+            out.release()
+
+            try:
+                clip = moviepy.VideoFileClip('detected_video.mp4')
+                clip.write_videofile("myvideo.mp4")
+                st_video = open('myvideo.mp4','rb')
+                video_bytes = st_video.read()
+                st.video(video_bytes)
+                st.write("Detected Video") 
+            except OSError:
+                ''
+
+
 
 
