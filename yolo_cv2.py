@@ -18,8 +18,7 @@ from PIL import Image
 from io import *
 import glob
 from datetime import datetime
-import os
-import time
+
 
 
 CLASS_NAME_FILE = "model/coco.names"
@@ -397,6 +396,7 @@ else:
     rad = st.sidebar.radio("Detection options",["Image","Video"])
     if rad == "Image":    
         imageInput()
+    
     elif rad == "Video": 
         st.subheader("VIDEO option")
         
