@@ -40,7 +40,11 @@ def load_model(weights=WEIGHT_FILE,clf=CLF_FILE):
     model.setInputParams(size=(416, 416), scale=1/255, swapRB=True)
     return net , model
 
-
+@st.cache(allow_output_mutation=True)
+def loadModel(weights=WEIGHT_FILE):
+    print("Load YOLOv5 model: Done")
+    model = torch.hub.load('ultralytics/yolov5', 'custom', path=weights, force_reload=True) 
+    return model
 
 def get_classes(file_name=CLASS_NAME_FILE):
     classes = []
@@ -162,35 +166,8 @@ class Video(VideoProcessorBase):
                             cv2.FONT_HERSHEY_COMPLEX, 0.5, color, 1)
 
             return av.VideoFrame.from_ndarray(image, format="bgr24")
+  
 
-def imageInput():
-    
-    image_file = st.file_uploader("Upload An Image", type=['png', 'jpeg', 'jpg'])
-    col1, col2 = st.columns(2)
-    if image_file is not None:
-        img = Image.open(image_file)
-        with col1:
-            st.image(img, caption='Uploaded Image', use_column_width='always')
-        # ts = datetime.timestamp(datetime.now())
-        # imgpath = os.path.join('data/uploads', str(ts)+image_file.name)
-        # outputpath = os.path.join('data/outputs', os.path.basename(imgpath))
-        # with open(imgpath, mode="wb") as f:
-        #     f.write(image_file.getbuffer())
-
-        #call Model prediction--
-        model = torch.hub.load('ultralytics/yolov5', 'custom', path='model/best.pt', force_reload=True) 
-        pred = model(img)
-        pred.render()  # render bbox in image
-        
-        for im in pred.ims:
-            im_base64 = Image.fromarray(im)
-        #im_base64.save(outputpath)
-
-        #--Display predicton
-            
-        #img_ = Image.open(im_base64)
-        with col2:
-            st.image(im_base64, caption='Model Prediction(s)', use_column_width='always')
 
 ########################################################################
 
@@ -234,17 +211,14 @@ if ver == "YOLOv4":
 
     # generate color list
     colors = np.random.randint(0, 255, size=(len(classes), 3), dtype="uint8")
-
-    uploader = st.empty()
-    uploaded_file = uploader.file_uploader("Choose a file")
-
-
-
-    if uploaded_file is not None:
-        
-        # Image detection
-        if rad =="Image":
-            st.subheader("Image option")
+      
+            
+    # Image detection
+    if rad =="Image":
+        st.subheader("Image option")
+        uploaded_file = st.file_uploader("Choose a file", key=0)
+    
+        if uploaded_file is not None:
 
             # Convert the file to an opencv image.
             file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
@@ -253,18 +227,14 @@ if ver == "YOLOv4":
             
             st.write("Original picture")
             st.image(img,width=700)
-
             height, width, channels = get_image_shape(img)
-
             # Detecting objects
             outs = detect_objects(img)
             
             st.subheader("Setting the threshold for our detection")
             threshold = st.slider("Threshold", min_value=0.00, max_value=1.0, step=0.05, value=0.5)
-
             if st.button("Detect"):
                 class_ids, boxes, confidences = detection_inferrence(outs,threshold)
-
                 # remove noise
                 indexes = non_maximum_suppresion(boxes, confidences)
                         
@@ -277,10 +247,17 @@ if ver == "YOLOv4":
                 
                 st.markdown(get_image_download_link(result,"result.jpg",'Download '+"result.jpg"), unsafe_allow_html=True)
         
-        #Video detection
-        elif rad =="Video":
-            st.subheader("VIDEO option")
+    #Video detection
+    elif rad =="Video":
+        st.subheader("VIDEO option")
+        with st.form("my-form", clear_on_submit=True):
+            uploaded_file = st.file_uploader("Choose a file", key=1)
+            col1, col2, col3 = st.columns([3,2,1])
 
+            with col3:
+                submitted = st.form_submit_button("Upload")
+
+        if submitted and uploaded_file is not None:
             vid = uploaded_file.name
             with open(vid, mode='wb') as f:
                 f.write(uploaded_file.read()) # save video to disk
@@ -289,28 +266,23 @@ if ver == "YOLOv4":
             video_bytes = st_video.read()
             st.video(video_bytes)
             st.write("Uploaded Video")
-
             cap = cv2.VideoCapture(vid)
             _, image = cap.read()
             image = cv2.cvtColor(image , cv2.COLOR_BGR2RGB)
             height, width, channels = get_image_shape(image)
-
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter("detected_video.mp4", fourcc, 20.0, (width, height))
             count = 0
-
             p = st.empty()
             p2 = st.empty()
             begin = time.perf_counter()
             while True:
                 _, image = cap.read()
-                
-
+            
                 if  _!= False:
                     try:
                         image = cv2.cvtColor(image , cv2.COLOR_BGR2RGB)
                         height, width, channels = get_image_shape(image)
-
                         start = time.perf_counter()
                         outs = detect_objects(image)
                         time_took = time.perf_counter() - start
@@ -321,11 +293,8 @@ if ver == "YOLOv4":
                         boxes.clear()
                         confidences.clear()
                         class_ids, boxes, confidences = detection_inferrence(outs,0.5)
-
                         indexes = non_maximum_suppresion(boxes, confidences)
-
                         image = display(boxes,indexes,image)
-
                         image = cv2.cvtColor(image , cv2.COLOR_RGBA2BGR)
                         out.write(image)
                     except KeyboardInterrupt:
@@ -334,11 +303,8 @@ if ver == "YOLOv4":
                     break
             
             p.write(f"Rendering time: {(time.perf_counter() - begin):.2f}")
-
-
             cap.release()
             out.release()
-
             try:
                 clip = moviepy.VideoFileClip('detected_video.mp4')
                 clip.write_videofile("myvideo.mp4")
@@ -351,7 +317,6 @@ if ver == "YOLOv4":
         
     # Camera detection
     elif rad =="Camera":
-        uploader.empty()
         st.subheader("Camera option")
 
         webrtc_ctx = webrtc_streamer(
@@ -373,17 +338,53 @@ if ver == "YOLOv4":
         st.write("No file was choosen!")
 else:
     rad = st.sidebar.radio("Detection options",["Image","Video"])
+    model = loadModel('model/best.pt') 
     if rad == "Image":    
-        imageInput()
+        image_file = st.file_uploader("Choose a file", key=2)
     
-    elif rad == "Video": 
+        if image_file is not None:
+            img = Image.open(image_file)
+            st.image(img, width=700, caption='Uploaded Image')
+            # ts = datetime.timestamp(datetime.now())
+            # imgpath = os.path.join('data/uploads', str(ts)+image_file.name)
+            # outputpath = os.path.join('data/outputs', os.path.basename(imgpath))
+            # with open(imgpath, mode="wb") as f:
+            #     f.write(image_file.getbuffer())
+
+            st.subheader("Setting the threshold for our detection")
+            threshold = st.slider("Threshold", min_value=0.00, max_value=1.0, step=0.05, value=0.5)
+
+            if st.button("Detect"):                       
+                st.write(f"Object detection with confidence: {threshold:.2f}")
+                #call Model prediction--
+                model = loadModel('model/best.pt')
+                model.conf = threshold  
+                pred = model(img)
+                pred.render()  # render bbox in image
+                
+                for im in pred.ims:
+                    im_base64 = Image.fromarray(im)
+                #im_base64.save(outputpath)
+
+                #--Display predicton
+                    
+                #img_ = Image.open(im_base64)
+                st.image(im_base64, width=700, caption='Model Prediction(s)')
+                    
+                st.markdown(get_image_download_link(im_base64,"result.jpg",'Download '+"result.jpg"), unsafe_allow_html=True)
+    
+    elif rad == "Video":
         st.subheader("VIDEO option")
         
-        uploader = st.empty()
-        uploaded_file = uploader.file_uploader("Choose a file")
+        with st.form("my-form", clear_on_submit=True):
+            uploaded_file = st.file_uploader("Choose a file", key=3)
+            col1, col2, col3 = st.columns([3,2,1])
 
-        if uploaded_file is not None:
-            model = torch.hub.load('ultralytics/yolov5', 'custom', path='model/best.pt', force_reload=True) 
+            with col3:
+                submitted = st.form_submit_button("UPLOAD!")
+
+        if submitted and uploaded_file is not None:
+            model.conf = 0.5
             vid = uploaded_file.name
             with open(vid, mode='wb') as f:
                 f.write(uploaded_file.read()) # save video to disk
