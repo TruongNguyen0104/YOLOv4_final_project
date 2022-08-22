@@ -28,12 +28,15 @@ FONT = cv2.FONT_HERSHEY_SIMPLEX
 FONT_SCALE = 1
 THICKNESS = 1
 
+COLORS = [(0, 255, 0), (0, 0, 255), (255, 0, 0),
+          (255, 255, 0), (255, 0, 255), (0, 255, 255)]
+
 ################################################
 # FUNCTION
 
 @st.cache(allow_output_mutation=True)
 def load_model(weights=WEIGHT_FILE,clf=CLF_FILE):
-    print("load YOLO")
+    print("Load YOLOv4 model: Done")
     net = cv2.dnn.readNet(weights,clf)
 
     model = cv2.dnn_DetectionModel(net)
@@ -145,8 +148,6 @@ def get_image_download_link(img,filename,text):
     return href
 
 
-COLORS = [(0, 255, 0), (0, 0, 255), (255, 0, 0),
-          (255, 255, 0), (255, 0, 255), (0, 255, 255)]
 
 class Video(VideoProcessorBase):
 
@@ -171,7 +172,7 @@ class Video(VideoProcessorBase):
 
 ########################################################################
 
-st.title("YOLOv4 MODEL APPLICATION")
+st.title("YOLO MODEL APPLICATION")
 
 bl3,header,bl4 = st.columns(3)
 header.header("Final project")
@@ -181,12 +182,15 @@ st.write("19127082 - Nguyễn Tất Trường \n\n\
 19127562 - Chung Thế Thọ")
 
 read_me = st.markdown("""
-    This project was built using Streamlit and OpenCV 
-    to demonstrate YOLO Object detection in both videos(pre-recorded)
-    and images.
+    This project was built using Streamlit, OpenCV, Pytorch
+    to demonstrate YOLO Object detection for images,videos(pre-recorded)
+    and camera(for YOLOv4 only).
     
-    This YOLO object Detection project can detect 80 objects(i.e classes)
-    in either a video or image. """
+    In YOLOv4: this YOLO object Detection project can detect 80 objects(i.e classes)
+    in either a video or image or camera. 
+    
+    In YOLOv5: this YOLO model we use vehicles dataset for training. The dataset contents object of 6 classes.
+    The model can detect in  either a video or image."""
     )
 
 # class of detection
@@ -197,7 +201,7 @@ class_ids = []
 confidences = []
 boxes = []
 
-ver = st.sidebar.radio("YOLO version",["YOLOv4","YOLOv5"])
+ver = st.sidebar.selectbox("YOLO version",["YOLOv4","YOLOv5"])
 if ver == "YOLOv4":
     rad = st.sidebar.radio("Detection options",["Image","Video","Camera"])
 
@@ -345,11 +349,6 @@ else:
         if image_file is not None:
             img = Image.open(image_file)
             st.image(img, width=700, caption='Uploaded Image')
-            # ts = datetime.timestamp(datetime.now())
-            # imgpath = os.path.join('data/uploads', str(ts)+image_file.name)
-            # outputpath = os.path.join('data/outputs', os.path.basename(imgpath))
-            # with open(imgpath, mode="wb") as f:
-            #     f.write(image_file.getbuffer())
 
             st.subheader("Setting the threshold for our detection")
             threshold = st.slider("Threshold", min_value=0.00, max_value=1.0, step=0.05, value=0.5)
