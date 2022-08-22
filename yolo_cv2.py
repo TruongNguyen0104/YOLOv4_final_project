@@ -317,7 +317,7 @@ if ver == "YOLOv4":
                 st.video(video_bytes)
                 st.write("Detected Video") 
             except OSError:
-                ''
+                print("error with moviepy")
         
     # Camera detection
     elif rad =="Camera":
