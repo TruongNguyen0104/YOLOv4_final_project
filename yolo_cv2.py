@@ -318,13 +318,6 @@ if ver == "YOLOv4":
                 st.write("Detected Video") 
             except OSError:
                 print("error with moviepy")
-
-            # clip = moviepy.VideoFileClip('detected_video.mp4')
-            # clip.write_videofile("myvideo.mp4")
-            # st_video = open('myvideo.mp4','rb')
-            # video_bytes = st_video.read()
-            # st.video(video_bytes)
-            # st.write("Detected Video") 
         
     # Camera detection
     elif rad =="Camera":
